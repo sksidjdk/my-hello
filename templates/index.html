@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>城市美食与风景分享</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div class="badge">城市角落 · 口袋指南</div>
+        <h1>发现好吃好玩，也分享你的小众美好</h1>
+        <p>在这里发布你遇见的美食、风景或露营地，让更多人一起出发。</p>
+      </header>
+
+      <section class="card highlight">
+        <h2>发布一条新推荐</h2>
+        <form id="post-form" class="form">
+          <label class="sr-only" for="title">标题</label>
+          <input id="title" name="title" type="text" placeholder="推荐标题，如：小酒馆烤鸡" required>
+
+          <div class="two-cols">
+            <div>
+              <label class="sr-only" for="location">地点</label>
+              <input id="location" name="location" type="text" placeholder="城市 · 街区" required>
+            </div>
+            <div>
+              <label class="sr-only" for="category">类型</label>
+              <select id="category" name="category" required>
+                <option value="美食" selected>美食</option>
+                <option value="风景">风景</option>
+                <option value="露营">露营</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="sr-only" for="image_url">照片链接</label>
+          <input id="image_url" name="image_url" type="url" placeholder="图片 URL（可粘贴手机相册外链）" required>
+
+          <label class="sr-only" for="note">一句话推荐</label>
+          <textarea id="note" name="note" rows="3" placeholder="说说为什么值得一去…"></textarea>
+
+          <button id="submit-btn" type="submit">发布</button>
+          <p id="form-status" class="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>最新分享</h2>
+          <span class="hint">大家的美食/风景/露营灵感</span>
+        </div>
+        <div id="feed" class="feed" aria-live="polite"></div>
+        <p id="feed-status" class="status muted" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <template id="post-card">
+      <article class="post">
+        <div class="media" role="presentation"></div>
+        <div class="content">
+          <div class="pill"></div>
+          <h3></h3>
+          <p class="location"></p>
+          <p class="note"></p>
+        </div>
+      </article>
+    </template>
+
+    <script>
+      const feed = document.getElementById('feed');
+      const form = document.getElementById('post-form');
+      const statusEl = document.getElementById('form-status');
+      const template = document.getElementById('post-card');
+      const submitBtn = document.getElementById('submit-btn');
+      const feedStatus = document.getElementById('feed-status');
+
+      const categoryColor = {
+        '美食': '#ffb347',
+        '风景': '#8bd3dd',
+        '露营': '#b5e48c',
+      };
+
+      async function renderFeed() {
+        feed.textContent = '';
+        feedStatus.textContent = '加载中…';
+
+        try {
+          const res = await fetch('/api/posts');
+          if (!res.ok) throw new Error('加载失败，请稍后重试。');
+          const data = await res.json();
+          feed.innerHTML = '';
+
+          if (!data.items?.length) {
+            feedStatus.textContent = '暂时还没有投稿，快来抢占封面吧！';
+            return;
+          }
+
+          feedStatus.textContent = '';
+          data.items.forEach((item) => {
+            const node = template.content.cloneNode(true);
+            const media = node.querySelector('.media');
+            const pill = node.querySelector('.pill');
+            node.querySelector('h3').textContent = item.title;
+            node.querySelector('.location').textContent = item.location;
+            node.querySelector('.note').textContent = item.note || '这位朋友很酷，没有留下文字。';
+            media.style.backgroundImage = `url(${item.image_url})`;
+            pill.textContent = item.category;
+            pill.style.backgroundColor = categoryColor[item.category] || '#d0d7ff';
+            feed.appendChild(node);
+          });
+        } catch (error) {
+          feedStatus.textContent = error.message;
+        }
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        statusEl.textContent = '';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '发布中…';
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+
+        try {
+          const res = await fetch('/api/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            const error = await res.text();
+            throw new Error(error || '提交失败');
+          }
+
+          form.reset();
+          statusEl.textContent = '发布成功，已加入最新推荐！';
+          await renderFeed();
+        } catch (error) {
+          statusEl.textContent = error.message || '发布失败，请稍后重试。';
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '发布';
+        }
+      });
+
+      renderFeed();
+    </script>
+  </body>
+</html>
