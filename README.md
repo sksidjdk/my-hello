@@ -8,7 +8,7 @@
 # 安装依赖
 pip install -r requirements.txt
 
-# 本地运行
+# 本地运行（默认监听 5000 端口）
 python -m flask --app api/index run --port 5000
 ```
 
@@ -16,7 +16,8 @@ python -m flask --app api/index run --port 5000
 
 ### API
 - `GET /api/posts`：获取当前展示的推荐列表（内存保存示例）。
-- `POST /api/posts`：提交一条新的推荐，需包含 `title`、`location`、`category`（美食/风景/露营）、`image_url`，可附加 `note`。
+- `POST /api/posts`：提交一条新的推荐，需包含 `title`、`location`、`category`（美食/风景/露营）、`image_url`，可附加 `note`（上限 240 字）。
+- `GET /health`：健康检查。
 
 ## 部署到 Vercel
 

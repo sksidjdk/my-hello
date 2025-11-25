@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, TypedDict
 
@@ -8,6 +8,9 @@ from flask import Flask, abort, jsonify, render_template, request
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+ALLOWED_CATEGORIES = {"美食", "风景", "露营"}
 
 
 @dataclass
@@ -63,6 +66,10 @@ def create_app() -> Flask:
     def home() -> str:
         return render_template("index.html")
 
+    @app.get("/health")
+    def health() -> Dict[str, str]:
+        return {"status": "ok"}
+
     @app.get("/api/posts")
     def list_posts() -> Dict[str, List[Dict[str, str]]]:
         return jsonify({"items": [asdict(post) for post in posts]})
@@ -70,19 +77,30 @@ def create_app() -> Flask:
     @app.post("/api/posts")
     def create_post() -> Dict[str, str]:
         payload: PostPayload = request.get_json(force=True, silent=True) or {}
-        missing = [field for field in ("title", "location", "category", "image_url") if not payload.get(field)]
+        missing = [
+            field for field in ("title", "location", "category", "image_url") if not payload.get(field)
+        ]
         if missing:
             abort(400, description=f"缺少字段: {', '.join(missing)}")
 
+        category = payload["category"].strip()
+        if category not in ALLOWED_CATEGORIES:
+            abort(400, description="category 仅支持 美食/风景/露营")
+
         note = payload.get("note", "").strip()
+        if len(note) > 240:
+            abort(400, description="note 超过 240 字符")
+
         post = Post(
             title=payload["title"].strip(),
             location=payload["location"].strip(),
-            category=payload["category"].strip(),
+            category=category,
             image_url=payload["image_url"].strip(),
             note=note,
         )
         posts.insert(0, post)
+        # 避免内存无限增长，只保留最新 120 条
+        del posts[120:]
         return jsonify({"status": "ok"}), 201
 
     return app

@@ -44,7 +44,7 @@
           <label class="sr-only" for="note">一句话推荐</label>
           <textarea id="note" name="note" rows="3" placeholder="说说为什么值得一去…"></textarea>
 
-          <button type="submit">发布</button>
+          <button id="submit-btn" type="submit">发布</button>
           <p id="form-status" class="status" aria-live="polite"></p>
         </form>
       </section>
@@ -55,6 +55,7 @@
           <span class="hint">大家的美食/风景/露营灵感</span>
         </div>
         <div id="feed" class="feed" aria-live="polite"></div>
+        <p id="feed-status" class="status muted" aria-live="polite"></p>
       </section>
     </main>
 
@@ -75,6 +76,8 @@
       const form = document.getElementById('post-form');
       const statusEl = document.getElementById('form-status');
       const template = document.getElementById('post-card');
+      const submitBtn = document.getElementById('submit-btn');
+      const feedStatus = document.getElementById('feed-status');
 
       const categoryColor = {
         '美食': '#ffb347',
@@ -83,32 +86,43 @@
       };
 
       async function renderFeed() {
-        feed.textContent = '加载中…';
-        const res = await fetch('/api/posts');
-        if (!res.ok) {
-          feed.textContent = '加载失败，请稍后重试。';
-          return;
-        }
+        feed.textContent = '';
+        feedStatus.textContent = '加载中…';
 
-        const data = await res.json();
-        feed.innerHTML = '';
-        data.items.forEach((item) => {
-          const node = template.content.cloneNode(true);
-          const media = node.querySelector('.media');
-          const pill = node.querySelector('.pill');
-          node.querySelector('h3').textContent = item.title;
-          node.querySelector('.location').textContent = item.location;
-          node.querySelector('.note').textContent = item.note || '这位朋友很酷，没有留下文字。';
-          media.style.backgroundImage = `url(${item.image_url})`;
-          pill.textContent = item.category;
-          pill.style.backgroundColor = categoryColor[item.category] || '#d0d7ff';
-          feed.appendChild(node);
-        });
+        try {
+          const res = await fetch('/api/posts');
+          if (!res.ok) throw new Error('加载失败，请稍后重试。');
+          const data = await res.json();
+          feed.innerHTML = '';
+
+          if (!data.items?.length) {
+            feedStatus.textContent = '暂时还没有投稿，快来抢占封面吧！';
+            return;
+          }
+
+          feedStatus.textContent = '';
+          data.items.forEach((item) => {
+            const node = template.content.cloneNode(true);
+            const media = node.querySelector('.media');
+            const pill = node.querySelector('.pill');
+            node.querySelector('h3').textContent = item.title;
+            node.querySelector('.location').textContent = item.location;
+            node.querySelector('.note').textContent = item.note || '这位朋友很酷，没有留下文字。';
+            media.style.backgroundImage = `url(${item.image_url})`;
+            pill.textContent = item.category;
+            pill.style.backgroundColor = categoryColor[item.category] || '#d0d7ff';
+            feed.appendChild(node);
+          });
+        } catch (error) {
+          feedStatus.textContent = error.message;
+        }
       }
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         statusEl.textContent = '';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '发布中…';
 
         const formData = new FormData(form);
         const payload = Object.fromEntries(formData.entries());
@@ -130,6 +144,9 @@
           await renderFeed();
         } catch (error) {
           statusEl.textContent = error.message || '发布失败，请稍后重试。';
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '发布';
         }
       });
 
