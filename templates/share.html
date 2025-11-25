@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>扫码进入 · 城市美食与风景分享</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+      body {
+        background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.08), transparent 25%),
+                    radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.12), transparent 28%),
+                    #0c1224;
+        color: #e9edf5;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px 16px;
+      }
+      .share-card {
+        background: rgba(17, 24, 39, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+        border-radius: 16px;
+        padding: 20px;
+        max-width: 460px;
+        width: min(460px, 100%);
+        text-align: center;
+      }
+      .share-card h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+        color: #f8fafc;
+      }
+      .share-card p {
+        margin: 0 0 12px;
+        color: #c5ccdf;
+      }
+      .qr-wrapper {
+        background: #fff;
+        border-radius: 12px;
+        padding: 16px;
+        display: inline-block;
+        margin: 10px auto 14px;
+      }
+      .qr-wrapper img {
+        display: block;
+        width: 220px;
+        height: 220px;
+      }
+      .share-link {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        word-break: break-all;
+        color: #e0e7ff;
+      }
+      .share-link code {
+        font-size: 14px;
+      }
+      .share-card button {
+        margin-left: auto;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.08);
+        color: #f8fafc;
+        cursor: pointer;
+      }
+      .share-card a.primary {
+        display: inline-block;
+        width: 100%;
+        margin-top: 14px;
+        padding: 12px 14px;
+        text-decoration: none;
+        color: #0c1224;
+        background: linear-gradient(120deg, #60a5fa, #a78bfa);
+        border-radius: 12px;
+        font-weight: 700;
+      }
+      footer {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="share-card">
+      <h1>扫码进入投稿页</h1>
+      <p>分享这个二维码，朋友扫描后可以直接在手机上发布照片和地点。</p>
+      <div class="qr-wrapper">
+        <img src="{{ url_for('qr_code') }}" alt="扫码进入城市美食与风景分享" loading="lazy">
+      </div>
+      <div class="share-link">
+        <code id="homepage-link">{{ homepage_url }}</code>
+        <button id="copy-share" type="button">复制</button>
+      </div>
+      <a class="primary" href="{{ homepage_url }}">直接打开网站</a>
+      <footer>二维码会自动匹配当前域名，部署到 Vercel 也能直接扫码。</footer>
+    </div>
+
+    <script>
+      const copyBtn = document.getElementById('copy-share');
+      const homepageLink = document.getElementById('homepage-link');
+      copyBtn?.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(homepageLink.textContent.trim());
+          copyBtn.textContent = '已复制';
+          setTimeout(() => (copyBtn.textContent = '复制'), 1800);
+        } catch (error) {
+          copyBtn.textContent = '复制失败';
+        }
+      });
+    </script>
+  </body>
+</html>

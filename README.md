@@ -19,6 +19,7 @@ python -m flask --app api/index run --port 5000
 - `POST /api/posts`：提交一条新的推荐，需包含 `title`、`location`、`category`（美食/风景/露营）、`image_url`，可附加 `note`（上限 240 字）。
 - `GET /health`：健康检查。
 - `GET /qr`：生成二维码图片，指向首页，方便手机扫码直接发布照片与地址评论。
+- `GET /share`：二维码分享页，展示扫码图片与可复制链接，一扫即可进入网站。
 
 ## 部署到 Vercel
 

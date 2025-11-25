@@ -105,11 +105,14 @@ def create_app() -> Flask:
         del posts[120:]
         return jsonify({"status": "ok"}), 201
 
+    def _homepage_url() -> str:
+        return request.url_root.rstrip("/") + "/"
+
     @app.get("/qr")
     def qr_code() -> Response:
         """生成指向首页的二维码，方便手机扫码进入投稿页面。"""
 
-        target_url = request.url_root.rstrip("/") + "/"
+        target_url = _homepage_url()
         qr = qrcode.QRCode(border=1, box_size=8)
         qr.add_data(target_url)
         qr.make(fit=True)
@@ -120,6 +123,12 @@ def create_app() -> Flask:
         buffer.seek(0)
 
         return Response(buffer.getvalue(), mimetype="image/png")
+
+    @app.get("/share")
+    def share() -> str:
+        """简洁的分享页，扫码即可进入网站。"""
+
+        return render_template("share.html", homepage_url=_homepage_url())
 
     return app
 
